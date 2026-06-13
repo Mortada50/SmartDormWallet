@@ -41,6 +41,9 @@ import SharedExpensesAdmin from './pages/admin/SharedExpensesAdmin';
 import MerchantsManagement from './pages/admin/MerchantsManagement';
 import SystemSettings from './pages/admin/SystemSettings';
 
+// Components
+import InstallPrompt from './components/InstallPrompt';
+
 // ── React Query client ─────────────────────────────────────────────────────
 
 const queryClient = new QueryClient({
@@ -145,6 +148,7 @@ export default function App() {
       <BrowserRouter>
         <AppHydrator>
           <Toaster toastOptions={TOAST_CONFIG} />
+          <InstallPrompt />
 
           <Routes>
             {/* Public routes */}
