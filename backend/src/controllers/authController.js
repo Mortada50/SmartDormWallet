@@ -58,8 +58,8 @@ const login = asyncHandler(async (req, res) => {
   // Set refresh token in httpOnly cookie for web clients
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true, // Must be true for sameSite: 'none'
+    sameSite: 'none', // Allow cross-site cookie
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/api/v1/auth/refresh',
   });
@@ -96,8 +96,8 @@ const refresh = asyncHandler(async (req, res) => {
   // Update cookie
   res.cookie('refreshToken', newRefreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'none',
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/api/v1/auth/refresh',
   });
@@ -120,7 +120,7 @@ const logout = asyncHandler(async (req, res) => {
     await authService.logout(refreshToken, req.user.publicId, userId);
   }
 
-  res.clearCookie('refreshToken', { path: '/api/v1/auth/refresh' });
+  res.clearCookie('refreshToken', { path: '/api/v1/auth/refresh', sameSite: 'none', secure: true });
 
   return res.status(200).json({
     success: true,
