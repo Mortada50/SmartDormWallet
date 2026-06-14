@@ -25,7 +25,7 @@ const logger = require('../config/logger');
  */
 async function createLog(logData, session) {
   try {
-    const opts = session ? { session } : {};
+    const opts = session ? { session, ordered: true } : {};
     await AuditLog.create([{
       publicId: require('crypto').randomUUID(),
       ...logData,

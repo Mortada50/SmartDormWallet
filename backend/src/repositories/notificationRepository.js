@@ -94,7 +94,7 @@ async function countUnread(userId) {
  * @returns {Promise<object>}
  */
 async function createOne(notifData, session) {
-  const opts = session ? { session } : {};
+  const opts = session ? { session, ordered: true } : {};
   const [doc] = await Notification.create([{
     publicId: randomUUID(),
     ...notifData,

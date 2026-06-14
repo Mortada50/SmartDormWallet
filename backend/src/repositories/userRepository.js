@@ -176,7 +176,7 @@ async function findWithKuraimi(userId) {
  * @returns {Promise<object>} Created user (safe fields, no _id).
  */
 async function createOne(userData, session) {
-  const opts = session ? { session } : {};
+  const opts = session ? { session, ordered: true } : {};
   const [doc] = await User.create([userData], opts);
   return doc.toObject();
 }
