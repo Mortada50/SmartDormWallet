@@ -163,7 +163,7 @@ async function createOne(expenseData, session) {
   if (!session) {
     throw new Error('[expenseRepository] session مطلوب لإنشاء مصروف مشترك');
   }
-  const [doc] = await Expense.create([expenseData], { session });
+  const [doc] = await Expense.create([expenseData], { session, ordered: true });
   logger.info('[expenseRepository] ✅ تم إنشاء مصروف مشترك', {
     publicId: doc.publicId,
     name: doc.name,

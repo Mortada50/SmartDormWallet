@@ -91,7 +91,7 @@ async function createOne(data, session) {
   if (!session) {
     throw new Error('[merchantRepository] session مطلوب لإنشاء تاجر');
   }
-  const [doc] = await Merchant.create([data], { session });
+  const [doc] = await Merchant.create([data], { session, ordered: true });
   logger.info('[merchantRepository] ✅ تم إنشاء تاجر جديد', {
     publicId: doc.publicId,
     name: doc.name,

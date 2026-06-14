@@ -311,7 +311,7 @@ async function createOne(txData, session) {
     );
   }
 
-  const [doc] = await Transaction.create([txData], { session });
+  const [doc] = await Transaction.create([txData], { session, ordered: true });
 
   logger.info('[transactionRepository] ✅ تم تسجيل عملية مالية', {
     publicId: doc.publicId,
@@ -342,7 +342,7 @@ async function createMany(txDataArray, session) {
     throw new Error('[transactionRepository] txDataArray يجب أن يكون مصفوفة غير فارغة');
   }
 
-  const docs = await Transaction.create(txDataArray, { session });
+  const docs = await Transaction.create(txDataArray, { session, ordered: true });
 
   logger.info('[transactionRepository] ✅ تم تسجيل عمليات مالية متعددة', {
     count: docs.length,

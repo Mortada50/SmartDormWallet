@@ -133,7 +133,7 @@ async function createOne(data, session) {
   if (!session) {
     throw new Error('[merchantTransactionRepository] session مطلوب لإنشاء معاملة تاجر');
   }
-  const [doc] = await MerchantTransaction.create([data], { session });
+  const [doc] = await MerchantTransaction.create([data], { session, ordered: true });
   logger.info('[merchantTransactionRepository] ✅ تم إنشاء معاملة تاجر', {
     publicId: doc.publicId,
     type: doc.type,
