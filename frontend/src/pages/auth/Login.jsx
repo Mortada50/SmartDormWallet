@@ -229,7 +229,7 @@ export default function Login() {
                   id="pin"
                   name="pin"
                   type={showPin ? 'text' : 'password'}
-                  inputMode="numeric"
+                  // inputMode="numeric"
                   placeholder="••••••"
                   value={form.pin}
                   onChange={handleChange}
