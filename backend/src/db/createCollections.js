@@ -746,7 +746,7 @@ const INDEXES = [
     keys: { merchantId: 1, invoiceReference: 1 },
     options: {
       unique: true,
-      partialFilterExpression: { invoiceReference: { $exists: true } },
+      partialFilterExpression: { invoiceReference: { $type: 'string' } },
       name: 'idx_merchantId_invoiceRef_unique',
     },
   },
