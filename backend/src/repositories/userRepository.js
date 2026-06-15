@@ -58,6 +58,17 @@ async function findByPublicId(publicId, projection = SAFE_PROJECTION) {
 }
 
 /**
+ * Find a user by their phone number.
+ *
+ * @param {string} phone
+ * @param {object} [projection]
+ * @returns {Promise<object|null>}
+ */
+async function findByPhone(phone, projection = SAFE_PROJECTION) {
+  return User.findOne({ phone: phone.trim() }, projection).lean();
+}
+
+/**
  * Find a user by their internal ObjectId.
  * Used internally for DB-level joins — never expose result _id to API.
  *
@@ -275,6 +286,7 @@ async function setStatus(publicId, status) {
 module.exports = {
   SAFE_PROJECTION,
   findByPublicId,
+  findByPhone,
   findById,
   findManyByPublicIds,
   findManyByIds,

@@ -204,6 +204,16 @@ const getUserDetail = asyncHandler(async (req, res) => {
 
 const createUser = asyncHandler(async (req, res) => {
   const { fullName, phone, roomNumber, role, initialPin } = req.body;
+  
+  const existingUser = await userRepository.findByPhone(phone);
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      code: 'DUPLICATE_PHONE',
+      message: 'رقم الهاتف مسجل مسبقاً لمستخدم آخر',
+    });
+  }
+
   const { db } = require('../config');
   const session = await db.startSession();
 

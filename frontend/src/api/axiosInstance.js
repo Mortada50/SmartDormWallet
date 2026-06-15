@@ -91,9 +91,14 @@ api.interceptors.response.use(
 
     // ── Handle 401 Unauthorized ────────────────────────────────────────────
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Don't retry the refresh endpoint itself (avoids infinite loop)
-      if (originalRequest.url?.includes('/auth/refresh')) {
-        handleAuthFailure('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+      // Don't retry the refresh endpoint or the login endpoint
+      if (originalRequest.url?.includes('/auth/refresh') || originalRequest.url?.includes('/auth/login')) {
+        if (originalRequest.url?.includes('/auth/refresh')) {
+          handleAuthFailure('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+        } else {
+          // It's a login failure, just show the toast and reject without redirecting
+          toast.error(serverMessage || 'بيانات الدخول غير صحيحة');
+        }
         return Promise.reject(error);
       }
 
