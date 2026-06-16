@@ -9,21 +9,22 @@
  *   5. Quick Actions    — Deposit request, View statement shortcuts
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Wallet, TrendingDown, ArrowDownLeft, ArrowUpRight,
   ShoppingBag, Users, RefreshCw, FileText, RotateCcw,
   Bell, LogOut, ChevronLeft, AlertTriangle,
-  PlusCircle, Download, Settings,
+  PlusCircle, Download, Settings, Send, Copy, CheckCircle2, Zap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { walletApi } from '../../api/walletApi';
 import { notificationApi } from '../../api/notificationApi';
+import { transferApi } from '../../api/transferApi';
 import { QUERY_KEYS } from '../../api/queryKeys';
 import { formatYER } from '../../utils/formatters';
 import useAuthStore from '../../store/authStore';
@@ -95,6 +96,22 @@ const TX_META = {
     bgClass: 'bg-financial-green-500/10',
     badge: 'badge-green',
     sign: '+',
+  },
+  TRANSFER_IN: {
+    label: 'تحويل وارد',
+    Icon: ArrowDownLeft,
+    colorClass: 'text-financial-green-400',
+    bgClass: 'bg-financial-green-500/10',
+    badge: 'badge-green',
+    sign: '+',
+  },
+  TRANSFER_OUT: {
+    label: 'تحويل صادر',
+    Icon: Send,
+    colorClass: 'text-blue-400',
+    bgClass: 'bg-blue-500/10',
+    badge: 'bg-blue-500/15 text-blue-400 border border-blue-500/25',
+    sign: '−',
   },
 };
 
@@ -195,9 +212,35 @@ export default function ResidentDashboard() {
   const debtPct = debtLimit > 0 ? Math.min(100, Math.round((debt / debtLimit) * 100)) : (debt > 0 ? 100 : 0);
   const debtBar = getDebtBarConfig(debtPct);
 
+  const [copiedAccount, setCopiedAccount] = useState(false);
+  const [generatingAccount, setGeneratingAccount] = useState(false);
+
   const handleLogout = async () => {
     await logout();
     navigate('/login', { replace: true });
+  };
+
+  const handleCopyAccount = () => {
+    if (!user?.accountNumber) return;
+    navigator.clipboard.writeText(user.accountNumber).then(() => {
+      setCopiedAccount(true);
+      setTimeout(() => setCopiedAccount(false), 2000);
+    });
+  };
+
+  const handleGenerateAccountNumber = async () => {
+    setGeneratingAccount(true);
+    try {
+      const { data } = await transferApi.generateAccountNumber();
+      toast.success(`تم إنشاء رقم حسابك: ${data.data.accountNumber} ✅`);
+      // Refresh user data
+      const { hydrate } = useAuthStore.getState();
+      await hydrate();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'فشل إنشاء رقم الحساب');
+    } finally {
+      setGeneratingAccount(false);
+    }
   };
 
   // ── Statement download ─────────────────────────────────────────────────────
@@ -395,52 +438,104 @@ export default function ResidentDashboard() {
           )}
         </AnimatePresence>
 
+        {/* ── Account Number Card ───────────────────────────────── */}
+        {!isLoading && !hasError && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22, duration: 0.35 }}
+          >
+            {user?.accountNumber ? (
+              <div className="card-glass px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-slate-500 text-xs mb-0.5">رقم حسابك — شاركه ليتحول لك</p>
+                  <p className="font-mono text-2xl font-black text-white tracking-widest">{user.accountNumber}</p>
+                </div>
+                <button
+                  onClick={handleCopyAccount}
+                  className={`btn-ghost w-9 h-9 p-0 transition-colors ${copiedAccount ? 'text-financial-green-400' : 'text-slate-400'}`}
+                  aria-label="نسخ رقم الحساب"
+                >
+                  {copiedAccount ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            ) : (
+              <div className="card-glass px-4 py-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-accent-500/15 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-4 h-4 text-accent-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-semibold">فعّل رقم حسابك</p>
+                  <p className="text-slate-500 text-xs">لاستقبال التحويلات من طلاب آخرين</p>
+                </div>
+                <button
+                  onClick={handleGenerateAccountNumber}
+                  disabled={generatingAccount}
+                  className="btn-primary text-xs py-2 px-3 flex-shrink-0"
+                >
+                  {generatingAccount ? '...' : 'إنشاء'}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* ── Quick Actions ─────────────────────────────────────────── */}
         {!isLoading && !hasError && (
           <motion.div
-            className="grid grid-cols-4 gap-3"
+            className="grid grid-cols-5 gap-3"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.4 }}
           >
             <button
               onClick={() => navigate('/deposits/new')}
-              className="card-glass-hover p-4 flex flex-col items-center gap-2 text-center group"
+              className="card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group"
             >
-              <div className="w-10 h-10 rounded-xl bg-financial-green-500/15 flex items-center justify-center group-hover:bg-financial-green-500/25 transition-colors">
-                <PlusCircle className="w-5 h-5 text-financial-green-400" />
+              <div className="w-9 h-9 rounded-xl bg-financial-green-500/15 flex items-center justify-center group-hover:bg-financial-green-500/25 transition-colors">
+                <PlusCircle className="w-4.5 h-4.5 text-financial-green-400" />
               </div>
-              <span className="text-sm font-medium text-white">إيداع</span>
+              <span className="text-xs font-medium text-white">إيداع</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/transfers/new')}
+              className="card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center group-hover:bg-blue-500/25 transition-colors">
+                <Send className="w-4.5 h-4.5 text-blue-400" />
+              </div>
+              <span className="text-xs font-medium text-white">تحويل</span>
             </button>
 
             <button
               onClick={() => navigate('/expenses')}
-              className="card-glass-hover p-4 flex flex-col items-center gap-2 text-center group"
+              className="card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group"
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center group-hover:bg-purple-500/25 transition-colors">
-                <Users className="w-5 h-5 text-purple-400" />
+              <div className="w-9 h-9 rounded-xl bg-purple-500/15 flex items-center justify-center group-hover:bg-purple-500/25 transition-colors">
+                <Users className="w-4.5 h-4.5 text-purple-400" />
               </div>
-              <span className="text-sm font-medium text-white">مصاريف</span>
+              <span className="text-xs font-medium text-white">مصاريف</span>
             </button>
 
             <button
               onClick={() => navigate('/withdrawals/new')}
-              className="card-glass-hover p-4 flex flex-col items-center gap-2 text-center group"
+              className="card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group"
             >
-              <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center group-hover:bg-orange-500/25 transition-colors">
-                <ArrowUpRight className="w-5 h-5 text-orange-400" />
+              <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center group-hover:bg-orange-500/25 transition-colors">
+                <ArrowUpRight className="w-4.5 h-4.5 text-orange-400" />
               </div>
-              <span className="text-sm font-medium text-white">سحب</span>
+              <span className="text-xs font-medium text-white">سحب</span>
             </button>
 
             <button
               onClick={downloadStatement}
-              className="card-glass-hover p-4 flex flex-col items-center gap-2 text-center group"
+              className="card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group"
             >
-              <div className="w-10 h-10 rounded-xl bg-financial-blue-500/15 flex items-center justify-center group-hover:bg-financial-blue-500/25 transition-colors">
-                <Download className="w-5 h-5 text-financial-blue-400" />
+              <div className="w-9 h-9 rounded-xl bg-financial-blue-500/15 flex items-center justify-center group-hover:bg-financial-blue-500/25 transition-colors">
+                <Download className="w-4.5 h-4.5 text-financial-blue-400" />
               </div>
-              <span className="text-sm font-medium text-white">كشف</span>
+              <span className="text-xs font-medium text-white">كشف</span>
             </button>
           </motion.div>
         )}

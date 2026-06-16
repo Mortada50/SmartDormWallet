@@ -56,13 +56,15 @@ const { createBaseSchema } = require('./_baseSchema');
  */
 const TRANSACTION_TYPES = Object.freeze({
   DEPOSIT: 'DEPOSIT',                     // Credit (+)
-  WITHDRAWAL: 'WITHDRAWAL',               // Debit  (–)
-  WITHDRAWAL_FEE: 'WITHDRAWAL_FEE',       // Debit  (–)
-  SHARED_EXPENSE: 'SHARED_EXPENSE',       // Debit  (–)
-  MERCHANT_PURCHASE: 'MERCHANT_PURCHASE', // Debit  (–)
-  DEBT_SETTLEMENT: 'DEBT_SETTLEMENT',     // Debit  (–)
-  ADJUSTMENT: 'ADJUSTMENT',               // Credit (+) or Debit (–)
+  WITHDRAWAL: 'WITHDRAWAL',               // Debit  (-)
+  WITHDRAWAL_FEE: 'WITHDRAWAL_FEE',       // Debit  (-)
+  SHARED_EXPENSE: 'SHARED_EXPENSE',       // Debit  (-)
+  MERCHANT_PURCHASE: 'MERCHANT_PURCHASE', // Debit  (-)
+  DEBT_SETTLEMENT: 'DEBT_SETTLEMENT',     // Debit  (-)
+  ADJUSTMENT: 'ADJUSTMENT',               // Credit (+) or Debit (-)
   REFUND: 'REFUND',                       // Credit (+)
+  TRANSFER_IN: 'TRANSFER_IN',             // Credit (+) - incoming transfer
+  TRANSFER_OUT: 'TRANSFER_OUT',           // Debit  (-) - outgoing transfer
 });
 
 /**
@@ -71,6 +73,7 @@ const TRANSACTION_TYPES = Object.freeze({
 const CREDIT_TYPES = Object.freeze([
   TRANSACTION_TYPES.DEPOSIT,
   TRANSACTION_TYPES.REFUND,
+  TRANSACTION_TYPES.TRANSFER_IN,
   // ADJUSTMENT can be credit — determined by creditAmount > 0
 ]);
 
@@ -83,6 +86,7 @@ const DEBIT_TYPES = Object.freeze([
   TRANSACTION_TYPES.SHARED_EXPENSE,
   TRANSACTION_TYPES.MERCHANT_PURCHASE,
   TRANSACTION_TYPES.DEBT_SETTLEMENT,
+  TRANSACTION_TYPES.TRANSFER_OUT,
   // ADJUSTMENT can be debit — determined by debitAmount > 0
 ]);
 
@@ -97,6 +101,7 @@ const REFERENCE_TYPES = Object.freeze({
   EXPENSE: 'expense',
   MERCHANT_TRANSACTION: 'merchantTransaction',
   ADJUSTMENT: 'adjustment',
+  TRANSFER: 'transfer',
 });
 
 // ---------------------------------------------------------------------------

@@ -76,6 +76,7 @@ const AUDIT_ACTIONS = Object.freeze({
   // Transactions
   ADJUSTMENT_CREATED: 'adjustment.created',
   REFUND_CREATED: 'refund.created',
+  TRANSFER_CREATED: 'TRANSFER_CREATED',
 
   // Settings
   SETTINGS_UPDATED: 'settings.updated',
@@ -108,6 +109,7 @@ const AUDIT_ENTITY_TYPES = Object.freeze({
   BACKUP: 'backup',
   DEPUTY: 'deputy',
   SYSTEM: 'system',
+  TRANSFER: 'transfer',
 });
 
 const ACTOR_ROLES = Object.freeze({

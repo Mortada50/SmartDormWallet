@@ -30,6 +30,7 @@ const SAFE_PROJECTION = {
   fullName: 1,
   phone: 1,
   roomNumber: 1,
+  accountNumber: 1,
   role: 1,
   status: 1,
   profileImagePublicId: 1,
@@ -69,7 +70,33 @@ async function findByPhone(phone, projection = SAFE_PROJECTION) {
 }
 
 /**
- * Find a user by their internal ObjectId.
+ * Find a user by their account number (6-digit transfer number).
+ * Returns only safe fields — used for transfer lookup.
+ *
+ * @param {string} accountNumber
+ * @returns {Promise<object|null>}
+ */
+async function findByAccountNumber(accountNumber) {
+  return User.findOne(
+    { accountNumber, status: 'active' },
+    { _id: 0, publicId: 1, fullName: 1, accountNumber: 1, roomNumber: 1 }
+  ).lean();
+}
+
+/**
+ * Find a user by account number WITH internal _id (needed for ledger operations).
+ *
+ * @param {string} accountNumber
+ * @returns {Promise<object|null>}
+ */
+async function findByAccountNumberWithId(accountNumber) {
+  return User.findOne(
+    { accountNumber, status: 'active' },
+    { publicId: 1, fullName: 1, accountNumber: 1, roomNumber: 1 }
+  ).lean();
+}
+
+/**
  * Used internally for DB-level joins — never expose result _id to API.
  *
  * @param {mongoose.Types.ObjectId} id
@@ -299,4 +326,6 @@ module.exports = {
   recordFailedLogin,
   recordSuccessfulLogin,
   setStatus,
+  findByAccountNumber,
+  findByAccountNumberWithId,
 };

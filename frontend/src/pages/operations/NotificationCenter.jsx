@@ -25,6 +25,8 @@ const TYPE_ICONS = {
   debt_approaching_limit:  { Icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-500/20' },
   pending_request_expiring:{ Icon: Bell,          color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
   expense_disputed:        { Icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  TRANSFER_IN:             { Icon: DollarSign,    color: 'text-financial-green-400', bg: 'bg-financial-green-500/20' },
+  TRANSFER_OUT:            { Icon: ArrowRight,    color: 'text-blue-400',   bg: 'bg-blue-500/20' },
   DEFAULT:                 { Icon: Info,          color: 'text-slate-400',  bg: 'bg-slate-500/20' },
 };
 
@@ -39,6 +41,8 @@ const TYPE_TITLE = {
   debt_approaching_limit:  'تحذير: الدين يقترب من الحد',
   pending_request_expiring:'تحذير: طلب معلق وينتهي قريباً',
   expense_disputed:        'نزاع على مصروف',
+  TRANSFER_IN:             'تحويل مالي وارد',
+  TRANSFER_OUT:            'تحويل مالي صادر',
 };
 
 export default function NotificationCenter() {
@@ -74,6 +78,7 @@ export default function NotificationCenter() {
     // Route based on type
     if (notif.type?.includes('deposit')) navigate('/deposits/history');
     else if (notif.type?.includes('expense') || notif.type?.includes('merchant')) navigate('/expenses');
+    else if (notif.type?.includes('TRANSFER')) navigate('/dashboard');
   };
 
   return (

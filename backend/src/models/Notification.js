@@ -47,6 +47,8 @@ const NOTIFICATION_TYPES = Object.freeze({
   DEBT_APPROACHING_LIMIT: 'debt_approaching_limit',
   PENDING_REQUEST_EXPIRING: 'pending_request_expiring',
   EXPENSE_DISPUTED: 'expense_disputed',
+  TRANSFER_IN: 'TRANSFER_IN',
+  TRANSFER_OUT: 'TRANSFER_OUT',
 });
 
 // ---------------------------------------------------------------------------

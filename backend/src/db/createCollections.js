@@ -147,6 +147,8 @@ const transactionsValidator = {
         'DEBT_SETTLEMENT',   // تسوية دين (–)
         'ADJUSTMENT',        // تعديل يدوي (+/–)
         'REFUND',            // استرداد (+)
+        'TRANSFER_IN',       // تحويل وارد (+)
+        'TRANSFER_OUT',      // تحويل صادر (-)
       ],
     },
     amount: {
@@ -188,6 +190,7 @@ const transactionsValidator = {
         'expense',
         'merchantTransaction',
         'adjustment',
+        'transfer',
         null
       ],
     },
@@ -545,6 +548,7 @@ const auditLogsValidator = {
         'merchant.purchase_recorded', 'merchant.settlement_recorded',
         // Transactions
         'adjustment.created', 'refund.created',
+        'TRANSFER_CREATED',
         // Settings
         'settings.updated',
         // Backup
@@ -562,7 +566,7 @@ const auditLogsValidator = {
       enum: [
         'user', 'depositRequest', 'withdrawalRequest', 'expense',
         'merchant', 'merchantTransaction', 'transaction', 'settings',
-        'backup', 'deputy', 'system',
+        'backup', 'deputy', 'system', 'transfer',
       ],
     },
     entityId: { bsonType: ['objectId', 'null'] },
@@ -598,6 +602,7 @@ const notificationsValidator = {
         'shared_expense_added', 'merchant_purchase_added',
         'low_balance', 'debt_approaching_limit',
         'pending_request_expiring', 'expense_disputed',
+        'TRANSFER_IN', 'TRANSFER_OUT',
       ],
     },
     message: { bsonType: 'string', minLength: 1, maxLength: 500 },
@@ -754,6 +759,7 @@ const INDEXES = [
   // ── users ─────────────────────────────────────────────────────────────────
   { collection: 'users', keys: { publicId: 1 }, options: { unique: true, name: 'idx_publicId_unique' } },
   { collection: 'users', keys: { role: 1, status: 1 }, options: { name: 'idx_role_status' } },
+  { collection: 'users', keys: { accountNumber: 1 }, options: { unique: true, partialFilterExpression: { accountNumber: { $type: 'string' } }, name: 'idx_accountNumber_unique' } },
 
   // ── auditLogs ─────────────────────────────────────────────────────────────
   { collection: 'auditlogs', keys: { actorId: 1, createdAt: -1 }, options: { name: 'idx_actorId_createdAt' } },
