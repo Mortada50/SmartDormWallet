@@ -83,6 +83,8 @@ const TYPE_DIRECTION = Object.freeze({
   [TRANSACTION_TYPES.MERCHANT_PURCHASE]: 'debit',
   [TRANSACTION_TYPES.DEBT_SETTLEMENT]: 'debit',
   [TRANSACTION_TYPES.REFUND]: 'credit',
+  [TRANSACTION_TYPES.TRANSFER_IN]: 'credit',
+  [TRANSACTION_TYPES.TRANSFER_OUT]: 'debit',
   // ADJUSTMENT direction is set per-call
 });
 
@@ -844,6 +846,87 @@ function computeWithdrawalDetails(params) {
 }
 
 // ---------------------------------------------------------------------------
+// processTransfer — Atomic peer-to-peer transfer between two residents
+// ---------------------------------------------------------------------------
+
+/**
+ * Transfers money from one resident to another atomically.
+ * Creates TRANSFER_OUT for sender and TRANSFER_IN for recipient in same session.
+ *
+ * @param {object} params
+ * @param {object} params.sender         - Sender user object (with _id, publicId, accountNumber)
+ * @param {object} params.recipient      - Recipient user object (with _id, publicId)
+ * @param {number} params.amount         - Amount to transfer (positive integer YER)
+ * @param {string} [params.note]         - Optional note for the transfer
+ * @param {mongoose.ClientSession} params.session - Active MongoDB session
+ * @returns {Promise<{ outTx: object, inTx: object }>}
+ */
+async function processTransfer({ sender, recipient, amount, note = null, session }) {
+  assertPositiveInteger(amount, 'مبلغ التحويل');
+
+  // ── 1. Calculate sender's current balance ──────────────────────────────
+  const senderState = await calculateBalance(sender._id, sender.publicId);
+  if (senderState.balance < amount) {
+    const err = new Error(`الرصيد غير كافٍ. رصيدك الحالي: ${senderState.balance} ر.ي`);
+    err.statusCode = 422;
+    err.code = 'INSUFFICIENT_BALANCE';
+    throw err;
+  }
+
+  const transferRef = randomUUID();
+  const description = note || `تحويل من ${sender.fullName} إلى ${recipient.fullName}`;
+
+  // ── 2. Record TRANSFER_OUT for sender ──────────────────────────────────
+  const outTxData = buildTransactionData({
+    userId: sender._id,
+    userPublicId: sender.publicId,
+    type: TRANSACTION_TYPES.TRANSFER_OUT,
+    amount,
+    description: note ? `تحويل لحساب ${recipient.accountNumber} — ${note}` : `تحويل لحساب ${recipient.accountNumber} (${recipient.fullName})`,
+    referenceType: 'transfer',
+    referencePublicId: transferRef,
+    metadata: {
+      recipientPublicId: recipient.publicId,
+      recipientAccountNumber: recipient.accountNumber,
+      recipientName: recipient.fullName,
+    },
+  });
+
+  // ── 3. Record TRANSFER_IN for recipient ───────────────────────────────
+  const inTxData = buildTransactionData({
+    userId: recipient._id,
+    userPublicId: recipient.publicId,
+    type: TRANSACTION_TYPES.TRANSFER_IN,
+    amount,
+    description: note ? `تحويل من حساب ${sender.accountNumber} — ${note}` : `تحويل من حساب ${sender.accountNumber} (${sender.fullName})`,
+    referenceType: 'transfer',
+    referencePublicId: transferRef,
+    metadata: {
+      senderPublicId: sender.publicId,
+      senderAccountNumber: sender.accountNumber,
+      senderName: sender.fullName,
+    },
+  });
+
+  const [outTx, inTx] = await recordTransactions([outTxData, inTxData], session);
+
+  // ── 4. Invalidate both balances from Redis cache ───────────────────────
+  await Promise.allSettled([
+    cacheDel(CacheKeys.userBalance(sender.publicId)),
+    cacheDel(CacheKeys.userBalance(recipient.publicId)),
+  ]);
+
+  logger.info('[ledgerService] ✅ تم التحويل بنجاح', {
+    from: sender.publicId,
+    to: recipient.publicId,
+    amount,
+    ref: transferRef,
+  });
+
+  return { outTx, inTx, transferRef };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -858,6 +941,7 @@ module.exports = {
   processDepositApproval,
   processWithdrawalApproval,
   processExpenseCreation,
+  processTransfer,
 
   // Utilities
   buildTransactionData,

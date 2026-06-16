@@ -26,15 +26,17 @@ const depositRoutes  = require('./depositRoutes');
 const adminRoutes    = require('./adminRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const withdrawalRoutes = require('./withdrawalRoutes');
+const transferRoutes = require('./transferRoutes');
 
 // API version prefix is already applied by app.js: app.use('/api/v1', router)
 router.use('/auth',      authRoutes);
-router.use('/',          walletRoutes);   // handles /wallet/*, /users/*, /admin/adjustments, etc.
+router.use('/',          walletRoutes);
 router.use('/expenses',  expenseRoutes);
 router.use('/merchants', merchantRoutes);
 router.use('/deposits',  depositRoutes);
 router.use('/withdrawals', withdrawalRoutes);
 router.use('/notifications', notificationRoutes);
-router.use('/admin',     adminRoutes);    // handles /admin/dashboard, /admin/users, /admin/settings, etc.
+router.use('/transfers', transferRoutes);
+router.use('/admin',     adminRoutes);
 
 module.exports = router;

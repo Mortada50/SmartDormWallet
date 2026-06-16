@@ -68,6 +68,17 @@ const userSchema = createBaseSchema({
     default: null,
   },
 
+  /**
+   * رقم الحساب الفريد لكل مستخدم (6 أرقام).
+   * null للمستخدمين القدامى الذين لم يُفعِّلوا رقم الحساب بعد.
+   * بمجرد التفعيل، لا يمكن تغييره.
+   */
+  accountNumber: {
+    type: String,
+    default: null,
+    match: [/^[0-9]{6}$/, 'رقم الحساب يجب أن يكون 6 أرقام'],
+  },
+
   // ── Authentication ────────────────────────────────────────────────────────
   /**
    * Hashed password (bcrypt, cost factor ≥ 12).

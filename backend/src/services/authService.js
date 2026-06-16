@@ -411,7 +411,13 @@ async function login(credentials, context = {}) {
   return {
     accessToken,
     refreshToken,
-    user: { publicId: user.publicId, fullName: user.fullName, role: user.role },
+    user: { 
+      publicId: user.publicId, 
+      fullName: user.fullName, 
+      role: user.role,
+      accountNumber: user.accountNumber || null,
+      roomNumber: user.roomNumber || null,
+    },
   };
 }
 

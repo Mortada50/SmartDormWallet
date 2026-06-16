@@ -29,6 +29,7 @@ import WithdrawalsHistory from './pages/operations/WithdrawalsHistory';
 import WithdrawalRequestForm from './pages/operations/WithdrawalRequestForm';
 import NotificationCenter from './pages/operations/NotificationCenter';
 import ResidentProfile from './pages/profile/ResidentProfile';
+import TransferForm from './pages/operations/TransferForm';
 
 // Admin Pages
 import AdminLayout from './components/layout/AdminLayout';
@@ -224,6 +225,14 @@ export default function App() {
               element={
                 <RequireAuth allowedRoles={['resident']}>
                   <WithdrawalRequestForm />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/transfers/new"
+              element={
+                <RequireAuth allowedRoles={['resident']}>
+                  <TransferForm />
                 </RequireAuth>
               }
             />
