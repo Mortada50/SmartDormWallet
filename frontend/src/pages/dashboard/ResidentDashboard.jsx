@@ -16,7 +16,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Wallet, TrendingDown, ArrowDownLeft, ArrowUpRight,
   ShoppingBag, Users, RefreshCw, FileText, RotateCcw,
-  Bell, LogOut, ChevronLeft, AlertTriangle,
+  Bell, LogOut, ChevronLeft, AlertTriangle, Lock,
   PlusCircle, Download, Settings, Send, Copy, CheckCircle2, Zap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -499,11 +499,22 @@ export default function ResidentDashboard() {
             </button>
 
             <button
-              onClick={() => navigate('/transfers/new')}
-              className="card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group"
+              onClick={() => {
+                if (!user?.accountNumber) {
+                  toast.error('يجب إنشاء رقم حساب أولاً لتتمكن من التحويل');
+                  return;
+                }
+                navigate('/transfers/new');
+              }}
+              className={`card-glass-hover p-3 flex flex-col items-center gap-1.5 text-center group ${!user?.accountNumber ? 'opacity-50 grayscale' : ''}`}
             >
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center group-hover:bg-blue-500/25 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center group-hover:bg-blue-500/25 transition-colors relative">
                 <Send className="w-4.5 h-4.5 text-blue-400" />
+                {!user?.accountNumber && (
+                  <div className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
+                    <Lock className="w-2.5 h-2.5 text-slate-400" />
+                  </div>
+                )}
               </div>
               <span className="text-xs font-medium text-white">تحويل</span>
             </button>
