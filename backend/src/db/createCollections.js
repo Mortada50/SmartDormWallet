@@ -287,6 +287,19 @@ const usersValidator = {
       description: 'حالة الحساب',
       enum: ['active', 'suspended'],
     },
+    savedBeneficiaries: {
+      bsonType: 'array',
+      description: 'المستفيدون المحفوظون للتحويل السريع',
+      items: {
+        bsonType: 'object',
+        required: ['name', 'accountNumber', 'addedAt'],
+        properties: {
+          name: { bsonType: 'string' },
+          accountNumber: { bsonType: 'string' },
+          addedAt: { bsonType: 'date' }
+        }
+      }
+    },
     // Encrypted at rest (AES-256-GCM) — stored as { iv, ciphertext, tag }
     kuriaimiAccountNumber: {
       bsonType: ['object', 'null'],
@@ -526,7 +539,7 @@ const auditLogsValidator = {
     publicId: { bsonType: 'string' },
     actorId: { bsonType: 'objectId' },
     actorPublicId: { bsonType: 'string' },
-    actorRole: { bsonType: 'string', enum: ['admin', 'deputy', 'system', 'user'] },
+    actorRole: { bsonType: 'string', enum: ['admin', 'deputy', 'system', 'user', 'resident'] },
     actorName: { bsonType: ['string', 'null'] },
     action: {
       bsonType: 'string',

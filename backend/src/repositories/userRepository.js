@@ -34,6 +34,7 @@ const SAFE_PROJECTION = {
   role: 1,
   status: 1,
   profileImagePublicId: 1,
+  savedBeneficiaries: 1,
   hasKuriaimiAccount: 1,
   twoFactorEnabled: 1,
   failedLoginAttempts: 1,
@@ -236,6 +237,38 @@ async function updateByPublicId(publicId, updates) {
 }
 
 /**
+ * Adds a saved beneficiary to the user's account.
+ * Uses $push to append to the array.
+ *
+ * @param {string} publicId
+ * @param {object} beneficiary - { name, accountNumber }
+ * @returns {Promise<object|null>}
+ */
+async function addBeneficiary(publicId, beneficiary) {
+  return User.findOneAndUpdate(
+    { publicId },
+    { $push: { savedBeneficiaries: beneficiary } },
+    { new: true, lean: true, projection: SAFE_PROJECTION }
+  );
+}
+
+/**
+ * Removes a saved beneficiary from the user's account by account number.
+ * Uses $pull to remove from the array.
+ *
+ * @param {string} publicId
+ * @param {string} accountNumber
+ * @returns {Promise<object|null>}
+ */
+async function removeBeneficiary(publicId, accountNumber) {
+  return User.findOneAndUpdate(
+    { publicId },
+    { $pull: { savedBeneficiaries: { accountNumber } } },
+    { new: true, lean: true, projection: SAFE_PROJECTION }
+  );
+}
+
+/**
  * Updates a user's Kuraimi account info (encrypted fields).
  * Called by UserService after EncryptionService has encrypted the values.
  *
@@ -320,12 +353,14 @@ module.exports = {
   findAllPaginated,
   findForAuth,
   findWithKuraimi,
+  findByAccountNumberWithId,
   createOne,
   updateByPublicId,
+  addBeneficiary,
+  removeBeneficiary,
   updateKuraimi,
   recordFailedLogin,
   recordSuccessfulLogin,
   setStatus,
   findByAccountNumber,
-  findByAccountNumberWithId,
 };

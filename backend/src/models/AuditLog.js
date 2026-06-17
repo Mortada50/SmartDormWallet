@@ -117,6 +117,7 @@ const ACTOR_ROLES = Object.freeze({
   DEPUTY: 'deputy',
   SYSTEM: 'system',
   USER: 'user',
+  RESIDENT: 'resident',
 });
 
 // ---------------------------------------------------------------------------
