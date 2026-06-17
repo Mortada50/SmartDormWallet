@@ -6,19 +6,22 @@
  * Step 3: Confirm summary → execute transfer
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Search, User, Banknote, CheckCircle2,
   Loader2, AlertCircle, ArrowLeft, Send, ChevronRight,
+  Trash2, BookmarkPlus, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { transferApi } from '../../api/transferApi';
 import { walletApi } from '../../api/walletApi';
+import { authApi } from '../../api/authApi';
 import { QUERY_KEYS } from '../../api/queryKeys';
 import { formatYER } from '../../utils/formatters';
+import useAuthStore from '../../store/authStore';
 
 // ── Step indicator ─────────────────────────────────────────────────────────
 
@@ -46,6 +49,15 @@ export default function TransferForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Preload Apple Pay sound on mount so it plays instantly after async call
+  const audioRef = useRef(null);
+  useEffect(() => {
+    const audio = new Audio('/sounds/apple-pay.mp3');
+    audio.preload = 'auto';
+    audio.volume = 0.8;
+    audioRef.current = audio;
+  }, []);
+
   const [step, setStep] = useState(1); // 1 | 2 | 3
   const [accountNumber, setAccountNumber] = useState('');
   const [recipient, setRecipient] = useState(null); // { fullName, accountNumber, roomNumber }
@@ -62,7 +74,58 @@ export default function TransferForm() {
   });
   const currentBalance = balanceData?.balance ?? 0;
 
-  // ── Step 1: Look up recipient ──────────────────────────────────────────
+  const { user, updateUser } = useAuthStore();
+  const beneficiaries = user?.savedBeneficiaries || [];
+  const [savingBeneficiary, setSavingBeneficiary] = useState(false);
+  const [deletingBeneficiary, setDeletingBeneficiary] = useState(null);
+
+  // ── Beneficiaries Actions ────────────────────────────────────────────────
+
+  const handleSaveBeneficiary = async () => {
+    setSavingBeneficiary(true);
+    try {
+      const { data } = await authApi.addBeneficiary({
+        name: recipient.fullName,
+        accountNumber: recipient.accountNumber
+      });
+      updateUser(data.data.user); // Update store with the new user object
+      toast.success('تم حفظ المستفيد بنجاح');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'فشل حفظ المستفيد');
+    } finally {
+      setSavingBeneficiary(false);
+    }
+  };
+
+  const handleDeleteBeneficiary = async (accNum, e) => {
+    e.stopPropagation();
+    setDeletingBeneficiary(accNum);
+    try {
+      const { data } = await authApi.removeBeneficiary(accNum);
+      updateUser(data.data.user); // Update store
+      toast.success('تم حذف المستفيد');
+    } catch (err) {
+      toast.error('فشل حذف المستفيد');
+    } finally {
+      setDeletingBeneficiary(null);
+    }
+  };
+
+  const isRecipientSaved = beneficiaries.some(b => b.accountNumber === recipient?.accountNumber);
+
+  // ── Kuraimi-like success chime (Web Audio API) ─────────────────────────
+
+  const playSuccessSound = useCallback(() => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
 
   const handleLookup = async () => {
     setFieldError('');
@@ -110,6 +173,7 @@ export default function TransferForm() {
         note: note.trim() || undefined,
       });
       setSuccess(true);
+      playSuccessSound();
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.balance() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions({ limit: 5 }) });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications() });
@@ -148,6 +212,24 @@ export default function TransferForm() {
           <p className="text-slate-500 text-sm mb-6">
             إلى <span className="text-white">{recipient?.fullName}</span>
           </p>
+          {!isRecipientSaved && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-accent-500/10 border border-accent-500/20 rounded-xl p-4 mb-6"
+            >
+              <p className="text-sm text-accent-300 font-medium mb-3">هل ترغب في حفظ الحساب لتسهيل التحويل مستقبلاً؟</p>
+              <button
+                onClick={handleSaveBeneficiary}
+                disabled={savingBeneficiary}
+                className="btn-secondary w-full py-2 flex items-center justify-center gap-2"
+              >
+                {savingBeneficiary ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
+                حفظ {recipient?.fullName} كمستفيد
+              </button>
+            </motion.div>
+          )}
           <button
             onClick={() => navigate('/dashboard')}
             className="btn-primary w-full"
@@ -207,6 +289,7 @@ export default function TransferForm() {
                     <label className="form-label">رقم الحساب (6 أرقام)</label>
                     <div className="relative">
                       <input
+                        id="acc-input"
                         type="tel"
                         inputMode="numeric"
                         maxLength={6}
@@ -243,9 +326,58 @@ export default function TransferForm() {
                 </div>
               </div>
 
-              <p className="text-center text-slate-600 text-xs">
+              <p className="text-center text-slate-600 text-xs mt-4">
                 يمكنك إيجاد رقم حساب الطالب في لوحة التحكم الخاصة به
               </p>
+
+              {beneficiaries.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-8"
+                >
+                  <h3 className="text-slate-400 text-xs font-semibold mb-3 pr-1">المستفيدون المحفوظون</h3>
+                  <div className="grid gap-2">
+                    {beneficiaries.map(b => (
+                      <div 
+                        key={b.accountNumber}
+                        onClick={() => {
+                          setAccountNumber(b.accountNumber);
+                          // Auto trigger lookup after setting state
+                          setTimeout(() => {
+                            const event = new KeyboardEvent('keydown', { key: 'Enter' });
+                            document.getElementById('acc-input')?.dispatchEvent(event);
+                          }, 50);
+                        }}
+                        className="card-glass-hover p-3 flex items-center justify-between cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-accent-500/20 flex items-center justify-center">
+                            <User className="w-4 h-4 text-accent-400" />
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white text-sm font-semibold">{b.name}</p>
+                            <p className="text-slate-500 text-xs font-mono tracking-wider">{b.accountNumber}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => handleDeleteBeneficiary(b.accountNumber, e)}
+                          disabled={deletingBeneficiary === b.accountNumber}
+                          className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-financial-red-400 hover:bg-financial-red-500/10 rounded-lg transition-colors"
+                          title="حذف المستفيد"
+                        >
+                          {deletingBeneficiary === b.accountNumber ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
 

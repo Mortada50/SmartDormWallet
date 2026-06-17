@@ -112,6 +112,16 @@ const userSchema = createBaseSchema({
     default: 'active',
   },
 
+  // ── Beneficiaries ─────────────────────────────────────────────────────────
+  savedBeneficiaries: {
+    type: [{
+      name: { type: String, required: true },
+      accountNumber: { type: String, required: true },
+      addedAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
+
   // ── Profile ───────────────────────────────────────────────────────────────
   /**
    * Cloudinary public_id ONLY — never a full URL.

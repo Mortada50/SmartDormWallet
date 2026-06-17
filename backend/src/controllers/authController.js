@@ -347,7 +347,84 @@ const changePassword = asyncHandler(async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/v1/auth/beneficiaries
+// ---------------------------------------------------------------------------
+
+const addBeneficiary = asyncHandler(async (req, res) => {
+  const { name, accountNumber } = req.body;
+
+  if (!name || !accountNumber) {
+    return res.status(400).json({
+      success: false,
+      code: 'MISSING_FIELDS',
+      message: 'الاسم ورقم الحساب مطلوبان',
+    });
+  }
+
+  // Ensure beneficiary user exists
+  const targetUser = await userRepository.findByAccountNumber(accountNumber);
+  if (!targetUser) {
+    return res.status(404).json({
+      success: false,
+      code: 'USER_NOT_FOUND',
+      message: 'رقم الحساب غير موجود في النظام',
+    });
+  }
+
+  // Make sure not adding self
+  const currentUser = await userRepository.findByPublicId(req.user.publicId);
+  if (currentUser.accountNumber === accountNumber) {
+    return res.status(400).json({
+      success: false,
+      message: 'لا يمكنك إضافة حسابك الخاص كمستفيد',
+    });
+  }
+
+  // Avoid duplicates
+  const alreadyExists = currentUser.savedBeneficiaries?.some(b => b.accountNumber === accountNumber);
+  if (alreadyExists) {
+    return res.status(400).json({
+      success: false,
+      message: 'هذا الحساب موجود مسبقاً في قائمة المستفيدين',
+    });
+  }
+
+  const updated = await userRepository.addBeneficiary(req.user.publicId, {
+    name,
+    accountNumber,
+    addedAt: new Date(),
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: { user: updated },
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/auth/beneficiaries/:accountNumber
+// ---------------------------------------------------------------------------
+
+const removeBeneficiary = asyncHandler(async (req, res) => {
+  const { accountNumber } = req.params;
+
+  if (!accountNumber) {
+    return res.status(400).json({
+      success: false,
+      message: 'رقم الحساب مطلوب',
+    });
+  }
+
+  const updated = await userRepository.removeBeneficiary(req.user.publicId, accountNumber);
+
+  return res.status(200).json({
+    success: true,
+    data: { user: updated },
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-module.exports = { login, refresh, logout, me, setup2FA, verify2FA, disable2FA, updateProfile, changePassword };
+module.exports = { login, refresh, logout, me, setup2FA, verify2FA, disable2FA, updateProfile, changePassword, addBeneficiary, removeBeneficiary };

@@ -34,6 +34,8 @@ const {
   disable2FA,
   updateProfile,
   changePassword,
+  addBeneficiary,
+  removeBeneficiary,
 } = require('../controllers/authController');
 
 // Public
@@ -45,6 +47,12 @@ router.post('/logout', authenticate, requireAnyRole, logout);
 router.get('/me', authenticate, requireAnyRole, me);
 router.patch('/me', authenticate, requireAnyRole, updateProfile);
 router.post('/change-password', authenticate, requireAnyRole, changePassword);
+
+// Beneficiaries
+router.post('/beneficiaries', authenticate, requireAnyRole, addBeneficiary);
+router.delete('/beneficiaries/:accountNumber', authenticate, requireAnyRole, removeBeneficiary);
+
+// 2FA Flow
 router.post('/2fa/setup', authenticate, requireAnyRole, setup2FA);
 router.post('/2fa/verify', authenticate, requireAnyRole, verify2FA);
 router.post('/2fa/disable', authenticate, requireAnyRole, disable2FA);
